@@ -7,7 +7,8 @@ import { useDisclosure } from "@nextui-org/react";
 import AtomDropdown from "@/components/atoms/Dropdown";
 import AtomPageTitle from "@/components/atoms/PageTitle";
 import MoleculeDataTable from "@/components/molecules/Table";
-import { columns, ReimbursementRequests } from "./columns";
+import StatusModal from "@/components/organisms/StatusModal";
+import { columns, ReimbursementRequests, UpdateRequests } from "./columns";
 
 // Move into separate file
 async function getReimbursementRequests(
@@ -21,6 +22,33 @@ async function getReimbursementRequests(
   );
 
   const data = (await res.json()) as ReimbursementRequests[];
+  if (!res.ok || !data) {
+    throw new Error("Page Not Found 404");
+  }
+
+  return data;
+}
+
+async function updateReimbursementRequests(
+  id: number | undefined,
+  selection: string | undefined
+): Promise<UpdateRequests> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer my-token",
+    },
+    body: JSON.stringify({ status: selection }),
+  };
+
+  const res = await fetch(
+    "http://localhost:5000/api/bank_administrators/1/reimbursement_requests/" +
+      id,
+    requestOptions
+  );
+
+  const data = (await res.json()) as UpdateRequests;
   if (!res.ok || !data) {
     throw new Error("Page Not Found 404");
   }
@@ -49,7 +77,7 @@ const ManagementPage: React.FC = () => {
     ReimbursementRequests | undefined
   >();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
-  // const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const fetchData = async () => {
     try {
@@ -67,13 +95,26 @@ const ManagementPage: React.FC = () => {
   const onRowClick = (key: number) => {
     const rowData = data.find((row) => row.id === key);
     setRowSelection(rowData);
-    // onOpen();
+    onOpen();
   };
 
   const onSelectionChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const index = parseInt(e.target.value);
     const selectData = values.find((value) => value.id === index);
     setStatusFilter(selectData?.value);
+  };
+
+  const updateStatus = async (id: number | undefined, status: string) => {
+    try {
+      await updateReimbursementRequests(id, status);
+      fetchData();
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const onSubmit = (status: string) => {
+    updateStatus(rowSelection?.id, status);
   };
 
   return (
@@ -86,6 +127,12 @@ const ManagementPage: React.FC = () => {
           label="Status"
           items={values}
           onSelectionChange={onSelectionChange}
+        />
+        <StatusModal
+          description={rowSelection?.reason}
+          isOpen={isOpen}
+          onOpenChange={onOpenChange}
+          submit={onSubmit}
         />
         <MoleculeDataTable
           rowAction={onRowClick}
