@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+label[data-slot="label"] {
+  margin-right: auto;
+}
+
+div[data-slot="main-wrapper"] {
+  width: 11rem;
+}
+
+div[data-slot="main-wrapper"] input {
+  text-align: end;
+}
