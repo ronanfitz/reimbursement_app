@@ -21,12 +21,11 @@ def get_bank_members():
 
 @bank_member_blueprint.route('/<int:member_id>/reimbursement_requests', methods=['GET'])
 def get_reimbursement_requests(member_id):
-    # Placeholder Code
     with current_app.app_context():
         engine = create_engine(current_app.config['SQLALCHEMY_DATABASE_URI'])
         session = Session(bind=engine)
 
-        requests = session.query(BankMember).all()
+        requests = session.query(ReimbursementRequest).filter(ReimbursementRequest.member_id == member_id).all()
 
         session.close()
 
@@ -35,14 +34,8 @@ def get_reimbursement_requests(member_id):
 
 @bank_member_blueprint.route('/<int:member_id>/reimbursement_requests', methods=['POST'])
 def submit_reimbursement_request(member_id):
-    # Placeholder Code
-    with current_app.app_context():
-        engine = create_engine(current_app.config['SQLALCHEMY_DATABASE_URI'])
-        session = Session(bind=engine)
-
-        requests = session.query(BankMember).all()
-
-        session.close()
-
-        serialized_requests = [req.serialize() for req in requests]
-        return jsonify(serialized_requests)
+    data = request.json
+    new_request = ReimbursementRequest(member_id=member_id, reason=data['reason'], amount=data['amount'], transaction_date=data['transaction_date'], status='Pending')
+    db.session.add(new_request)
+    db.session.commit()
+    return jsonify({'message': 'Reimbursement request submitted successfully'})
